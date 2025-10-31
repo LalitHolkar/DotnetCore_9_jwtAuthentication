@@ -1,8 +1,10 @@
 using jwtAuthentication.Data;
 using jwtAuthentication.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Newtonsoft.Json;
 using Scalar.AspNetCore;
 using System.Text;
 
@@ -38,6 +40,33 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
     app.MapScalarApiReference();
 }
+
+app.UseExceptionHandler(exception => {
+    exception.Run(context => 
+    {
+        context.Response.StatusCode = 500;
+        context.Response.ContentType= "application/json";
+        var exceptionService=context.Features.Get<IExceptionHandlerFeature>();
+        if(exceptionService != null)
+        {
+            string errorMessage = exceptionService.Error.Message;
+            return context.Response.WriteAsync(JsonConvert.SerializeObject(new
+            {
+              Error=  errorMessage,
+              StatusCode=500
+            }));
+        }
+        else
+        {
+            return context.Response.WriteAsync(JsonConvert.SerializeObject(new
+            {
+                Error = "Something went wrong please try again!",
+                StatusCode = 500
+            }));
+
+        }
+    });
+});
 
 app.UseHttpsRedirection();
 
